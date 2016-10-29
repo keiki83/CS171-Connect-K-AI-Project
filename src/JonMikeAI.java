@@ -12,6 +12,117 @@ public class JonMikeAI extends CKPlayer {
 		teamName = "JonMikeAI";
 	}
 
+	public int minMax(BoardModel state, int depth, boolean max) {
+		// Return the heuristic value of the current state if we have reached our depth limit
+		if (depth == CUTOFF_DEPTH) {
+			return heuristic(state);
+		}
+
+		// Figure out how many available moves we could have (Width w/ gravity, Width*Height w/o gravity)
+		int maxMoves = (state.gravityEnabled())	? state.getWidth() : state.getWidth() * state.getHeight();
+
+		Point[] availableMoves = new Point[maxMoves]; 
+
+		// Loop through each column and row selecting available moves.  If gravity is on,
+		// only select the lowest y-index move in each column.
+		int movesSoFar = 0;
+		for (int i = 0; i < state.getWidth(); i++) {
+			for (int j = 0; j < state.getHeight(); j++) {
+				if (state.getSpace(i, j) == 0) {
+					availableMoves[movesSoFar++] = new Point(i,j);
+					if (state.gravityEnabled()) {
+						break;
+					}
+				}
+			}
+		}
+
+		int maxVal = Integer.MIN_VALUE;
+		int minVal = Integer.MAX_VALUE;
+		int moveVal;
+
+		// Loop through each move performing a min/max evaluation on each recursively
+		for (int i = 0; i < movesSoFar; i++) {
+			// Determine which player is going by assuming it is the opposite of the
+			// player that just made a move
+			byte player = (byte)(state.getSpace(state.getLastMove()) == 1 ? 2 : 1);
+
+			// Recurse into the minMax function
+			// Pass the state we would get by making the move
+			// Increment the depth
+			// If this level is a max level then the next will be a min and vice versa
+			moveVal = minMax(state.placePiece(availableMoves[i], player), depth+1, !max);
+
+			if (moveVal < minVal) {
+				minVal = moveVal;
+			}
+
+			if (moveVal > maxVal) {
+				maxVal = moveVal;
+			}
+		}
+
+		if (max) {
+			return maxVal;
+		} else {
+			return minVal;
+		}
+	}
+
+	@Override
+	public Point getMove(BoardModel state) {
+		// Figure out how many available moves we could have (Width w/ gravity, Width*Height w/o gravity)
+		int maxMoves = (state.gravityEnabled()) ? state.getWidth() : state.getWidth() * state.getHeight();
+
+		Point[] availableMoves = new Point[maxMoves]; 
+
+		// Loop through each column and row selecting available moves.  If gravity is on,
+		// only select the lowest y-index move in each column.
+		int movesSoFar = 0;
+		for (int i = 0; i < state.getWidth(); i++) {
+			for (int j = 0; j < state.getHeight(); j++) {
+				if (state.getSpace(i, j) == 0) {
+					availableMoves[movesSoFar++] =  new Point(i,j);
+					if (state.gravityEnabled()) {
+						break;
+					}
+				}
+			}
+		}
+
+		int maxVal = Integer.MIN_VALUE;
+		Point maxValMove = null;
+		int moveVal;
+
+		// Loop through each move performing a min/max evaluation on each recursively
+		for (int i = 0; i < movesSoFar; i++) {
+			// Determine which player is going by assuming it is the opposite of the
+			// player that just made a move
+			byte player;
+			if(state.getLastMove() == null) {
+				player = 1;
+			}
+			else {
+				player = (byte)(state.getSpace(state.getLastMove()) == 1 ? 2 : 1);
+			}
+
+			// Recurse into the minMax function
+			// Pass the state we would get by making the move
+			moveVal = minMax(state.placePiece(availableMoves[i], player), 0, MAX);
+
+			if (moveVal > maxVal) {
+				maxVal = moveVal;
+				maxValMove = availableMoves[i];
+			}
+		}
+		return maxValMove;
+	}
+
+	@Override
+	public Point getMove(BoardModel state, int deadline) {
+		return getMove(state);
+	}
+
 	// Heuristic function
 	public int heuristic(BoardModel state) {
 		int p1Win = 0;				// sum of # of player1 possible win paths
@@ -124,121 +235,6 @@ public class JonMikeAI extends CKPlayer {
 		Point lastMove = state.getLastMove();
 		return (state.pieces[lastMove.x][lastMove.y] == 1) ? (p2Win - p1Win) : (p1Win - p2Win);
 
-	}
+	} // end Heuristic function
 
-
-	public int minMax(BoardModel state, int depth, boolean max) {
-		// Return the heuristic value of the current state if we have reached our depth limit
-		if (depth == CUTOFF_DEPTH) {
-			return heuristic(state);
-		}
-
-		// Figure out how many available moves we could have (Width w/ gravity, Width*Height w/o gravity)
-		int maxMoves = (state.gravityEnabled())	? state.getWidth() : state.getWidth() * state.getHeight();
-
-		Point[] availableMoves = new Point[maxMoves]; 
-
-		// Loop through each column and row selecting available moves.  If gravity is on,
-		// only select the lowest y-index move in each column.
-		int movesSoFar = 0;
-		for (int i = 0; i < state.getWidth(); i++) {
-			for (int j = 0; j < state.getHeight(); j++) {
-				if (state.getSpace(i, j) == 0) {
-					availableMoves[movesSoFar++] = new Point(i,j);
-					if (state.gravityEnabled()) {
-						break;
-					}
-				}
-			}
-		}
-
-		int maxVal = Integer.MIN_VALUE;
-		int minVal = Integer.MAX_VALUE;
-		int moveVal;
-
-		// Loop through each move performing a min/max evaluation on each recursively
-		for (int i = 0; i < movesSoFar; i++) {
-			// Determine which player is going by assuming it is the opposite of the
-			// player that just made a move
-			byte player = (byte)(state.getSpace(state.getLastMove()) == 1 ? 2 : 1);
-
-			// Recurse into the minMax function
-			// Pass the state we would get by making the move
-			// Increment the depth
-			// If this level is a max level then the next will be a min and vice versa
-			moveVal = minMax(state.placePiece(availableMoves[i], player), depth+1, !max);
-
-			if (moveVal < minVal) {
-				minVal = moveVal;
-			}
-
-			if (moveVal > maxVal) {
-				maxVal = moveVal;
-			}
-		}
-
-		if (max) {
-			return maxVal;
-		} else {
-			return minVal;
-		}
-	}
-
-	@Override
-	public Point getMove(BoardModel state) {
-		// Figure out how many available moves we could have (Width w/ gravity, Width*Height w/o gravity)
-		int maxMoves = (state.gravityEnabled()) ? state.getWidth() : state.getWidth() * state.getHeight();
-
-		Point[] availableMoves = new Point[maxMoves]; 
-
-		// Loop through each column and row selecting available moves.  If gravity is on,
-		// only select the lowest y-index move in each column.
-		int movesSoFar = 0;
-		for (int i = 0; i < state.getWidth(); i++) {
-			for (int j = 0; j < state.getHeight(); j++) {
-				if (state.getSpace(i, j) == 0) {
-					availableMoves[movesSoFar++] =  new Point(i,j);
-					if (state.gravityEnabled()) {
-						break;
-					}
-				}
-			}
-		}
-
-		int maxVal = Integer.MIN_VALUE;
-		Point maxValMove = null;
-		int moveVal;
-
-		// Loop through each move performing a min/max evaluation on each recursively
-		for (int i = 0; i < movesSoFar; i++) {
-			// Determine which player is going by assuming it is the opposite of the
-			// player that just made a move
-			byte player;
-			if(state.getLastMove() == null) {
-				player = 1;
-			}
-			else {
-				player = (byte)(state.getSpace(state.getLastMove()) == 1 ? 2 : 1);
-			}
-			
-			// Recurse into the minMax function
-			// Pass the state we would get by making the move
-			moveVal = minMax(state.placePiece(availableMoves[i], player), 0, MAX);
-
-			if (moveVal > maxVal) {
-				maxVal = moveVal;
-				maxValMove = availableMoves[i];
-			}
-		}
-		return maxValMove;
-	}
-
-	@Override
-	public Point getMove(BoardModel state, int deadline) {
-		return getMove(state);
-	}
-	
-
-	
-	
 }
