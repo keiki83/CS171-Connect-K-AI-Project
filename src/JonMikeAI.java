@@ -64,7 +64,7 @@ public class JonMikeAI extends CKPlayer {
 		}
 
 		// return v
-		return 1;
+		return maxValue;
 	}
 
 	// minValue(state) from slides
@@ -90,7 +90,7 @@ public class JonMikeAI extends CKPlayer {
 		}
 
 		// return v
-		return 1;
+		return minValue;
 	}
 
 	
