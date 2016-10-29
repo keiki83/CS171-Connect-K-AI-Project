@@ -5,91 +5,90 @@ import java.util.ArrayList;
 
 public class JonMikeAI extends CKPlayer {
 	private final int CUTOFF_DEPTH = 2;
-	private final boolean MAX = true;
-	private final boolean MIN = false;
 
 	public JonMikeAI(byte player, BoardModel state) {
 		super(player, state);
 		teamName = "JonMikeAI";
 	}
 
-	public int minMax(BoardModel state, int depth, boolean max) {
-		// Return the heuristic value of the current state if we have reached our depth limit
-		if (depth == CUTOFF_DEPTH) {
-			return heuristic(state);
-		}
-
-		ArrayList<Point> availableMoves = getAvailableMoves(state); 
-
-		int maxVal = Integer.MIN_VALUE;
-		int minVal = Integer.MAX_VALUE;
-		int moveVal;
-
-		// Loop through each move performing a min/max evaluation on each recursively
-		for (int i = 0; i < availableMoves.size(); i++) {
-			// Determine which player is going by assuming it is the opposite of the
-			// player that just made a move
-			byte player = (byte)(state.getSpace(state.getLastMove()) == 1 ? 2 : 1);
-
-			// Recurse into the minMax function
-			// Pass the state we would get by making the move
-			// Increment the depth
-			// If this level is a max level then the next will be a min and vice versa
-			moveVal = minMax(state.placePiece(availableMoves.get(i), player), depth+1, !max);
-
-			if (moveVal < minVal) {
-				minVal = moveVal;
-			}
-
-			if (moveVal > maxVal) {
-				maxVal = moveVal;
-			}
-		}
-
-		if (max) {
-			return maxVal;
-		} else {
-			return minVal;
-		}
-	}
-
-	@Override
-	public Point getMove(BoardModel state) {
-
-		ArrayList<Point> availableMoves = getAvailableMoves(state); 
-		
-		int maxVal = Integer.MIN_VALUE;
-		Point maxValMove = null;
-		int moveVal;
-
-		// Loop through each move performing a min/max evaluation on each recursively
-		for (int i = 0; i < availableMoves.size(); i++) {
-			// Determine which player is going by assuming it is the opposite of the
-			// player that just made a move
-			byte player;
-			if(state.getLastMove() == null) {
-				player = 1;
-			}
-			else {
-				player = (byte)(state.getSpace(state.getLastMove()) == 1 ? 2 : 1);
-			}
-
-			// Recurse into the minMax function
-			// Pass the state we would get by making the move
-			moveVal = minMax(state.placePiece(availableMoves.get(i), player), 0, MAX);
-
-			if (moveVal > maxVal) {
-				maxVal = moveVal;
-				maxValMove = availableMoves.get(i);
-			}
-		}
-		return maxValMove;
-	}
-
 	@Override
 	public Point getMove(BoardModel state, int deadline) {
 		return getMove(state);
 	}
+	
+	// mmSearch(state) from slides
+	@Override
+	public Point getMove(BoardModel state) {
+
+		ArrayList<Point> availableMoves = getAvailableMoves(state); 
+
+		int value;
+		int maxValue = Integer.MIN_VALUE;
+		int depth = 0;
+		Point move = null;
+
+		for (int i = 0; i < availableMoves.size(); i++) {
+			value = minValue(state.placePiece(availableMoves.get(i), (byte) 1), depth+1);
+			if(value > maxValue) {
+				maxValue = value;
+				move = availableMoves.get(i);
+			}
+		}
+		return move;
+	}
+	
+	// maxValue(state) from slides
+	private int maxValue(BoardModel state, int depth) {
+		// if recurse limit reached, eval position
+		// if(terminal(state)) return utility(state);
+		if (depth == CUTOFF_DEPTH)
+			return heuristic(state);
+
+		// otherwise, find the best child
+		ArrayList<Point> availableMoves = getAvailableMoves(state); 
+
+		// v = -infty
+		int value; 
+		int maxValue = Integer.MIN_VALUE;
+
+		// for each action a:
+		//	v = max(v, minValue(apply(state,a))
+		for(int i = 0; i < availableMoves.size(); i++) {
+			value = minValue(state.placePiece(availableMoves.get(i), (byte) 1), depth+1);
+			if (value > maxValue)
+				maxValue = value;
+		}
+
+		// return v
+		return 1;
+	}
+
+	// minValue(state) from slides
+	private int minValue(BoardModel state, int depth) {
+		// If recursion limit reached, eval position
+		// if(terminal(state)) return utility(state)
+		if (depth == CUTOFF_DEPTH)
+			return heuristic(state);
+
+		// otherwise, find the worst child
+		ArrayList<Point> availableMoves = getAvailableMoves(state); 
+
+		// v = infty
+		int value; 
+		int minValue = Integer.MAX_VALUE;
+
+		// for each action a:
+		//	v = max(v, maxValue(apply(state,a))
+		for(int i = 0; i < availableMoves.size(); i++) {
+			value = maxValue(state.placePiece(availableMoves.get(i), (byte) 2), depth+1);
+			if (value < minValue) 
+				minValue = value;
+		}
+
+		// return v
+		return 1;
+	}
+	
 
 	// Get available moves - Loop through each column and row selecting available moves.
 	// If gravity is on, only select the lowest y-index move in each column.
@@ -107,7 +106,7 @@ public class JonMikeAI extends CKPlayer {
 		}
 		return availableMoves;
 	}
-	
+
 	// Heuristic function
 	private int heuristic(BoardModel state) {
 		int p1Win = 0;				// sum of # of player1 possible win paths
