@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 
 public class JonMikeAI extends CKPlayer {
+
 	private final int CUTOFF_DEPTH = 2;
 
 	public JonMikeAI(byte player, BoardModel state) {
@@ -11,10 +12,12 @@ public class JonMikeAI extends CKPlayer {
 		teamName = "JonMikeAI";
 	}
 
+	
 	@Override
 	public Point getMove(BoardModel state, int deadline) {
 		return getMove(state);
 	}
+
 	
 	// mmSearch(state) from slides
 	@Override
@@ -36,6 +39,7 @@ public class JonMikeAI extends CKPlayer {
 		}
 		return move;
 	}
+
 	
 	// maxValue(state) from slides
 	private int maxValue(BoardModel state, int depth) {
@@ -88,8 +92,8 @@ public class JonMikeAI extends CKPlayer {
 		// return v
 		return 1;
 	}
-	
 
+	
 	// Get available moves - Loop through each column and row selecting available moves.
 	// If gravity is on, only select the lowest y-index move in each column.
 	private ArrayList<Point> getAvailableMoves(BoardModel state) {	
@@ -107,118 +111,120 @@ public class JonMikeAI extends CKPlayer {
 		return availableMoves;
 	}
 
-	// Heuristic function
+	// New heuristic function
 	private int heuristic(BoardModel state) {
 		int p1Win = 0;				// sum of # of player1 possible win paths
 		int p2Win = 0;				// sum of # of player2 possible win paths
 
 		// Iterate over the board
-		for(int i = 0; i < state.width; i++) {
-			for(int j = 0; j < state.height; j++) {	
+		for(int x = 0; x < state.width; x++) {
+			for(int y = 0; y < state.height; y++) {	
+				p1Win += getVerticle(state, new Point(x,y), (byte) 1);
+				p1Win += getHorizontal(state, new Point(x,y), (byte) 1);
+				p1Win += getDiagonalLeft(state, new Point(x,y), (byte) 1);
+				p1Win += getDiagonalRight(state, new Point(x,y), (byte) 1);
+				p2Win += getVerticle(state, new Point(x,y), (byte) 2);
+				p2Win += getHorizontal(state, new Point(x,y), (byte) 2);
+				p2Win += getDiagonalLeft(state, new Point(x,y), (byte) 2);
+				p2Win += getDiagonalRight(state, new Point(x,y), (byte) 2);
 
-				// up [i][j+k]
-				if(state.height >= j + state.kLength) {
-					int p1Pieces = 0;
-					int p2Pieces = 0;
-					for(int k = 0; k < state.kLength; k++) {
-						if(state.pieces[i][j+k] == 1) p1Pieces++;
-						if(state.pieces[i][j+k] == 2) p2Pieces++;
-					}
-					if(p1Pieces == 0) p2Win++;
-					if(p2Pieces == 0) p1Win++;
-				}
+			}
+		}
 
-				// right & up [i+k][j+k]
-				if((state.width >= i + state.kLength) && (state.height >= j + state.kLength)) {					
-					int p1Pieces = 0;
-					int p2Pieces = 0;
-					for(int k = 0; k < state.kLength; k++) {	
-						if(state.pieces[i+k][j+k] == 1)	p1Pieces++;
-						if(state.pieces[i+k][j+k] == 2)	p2Pieces++;
-					}
-					if(p1Pieces == 0) p2Win++;
-					if(p2Pieces == 0) p1Win++;
-				}
+		return p1Win - p2Win;
 
-				// right [i+k][j]
-				if(state.width >= i + state.kLength) {
-					int p1Pieces = 0;
-					int p2Pieces = 0;
-					for(int k = 0; k < state.kLength; k++) {	
-						if(state.pieces[i+k][j] == 1) p1Pieces++;
-						if(state.pieces[i+k][j] == 2) p2Pieces++;
-					}
-					if(p1Pieces == 0) p2Win++;
-					if(p2Pieces == 0) p1Win++;
-				}
+	} 
 
-				// right & down [i+k][j-k]
-				if((state.width >= i + state.kLength) && (state.kLength <= j + 1)) {
-					int p1Pieces = 0;
-					int p2Pieces = 0;
-					for(int k = 0; k < state.kLength; k++) {	
-						if(state.pieces[i+k][j-k] == 1)	p1Pieces++;
-						if(state.pieces[i+k][j-k] == 2)	p2Pieces++;
-					}
-					if(p1Pieces == 0) p2Win++;
-					if(p2Pieces == 0) p1Win++;
-				}
+	// Heuristic Helper Function (up)
+	private int getVerticle(BoardModel state, Point position, Byte player) {
+		int pieces = 0;
+		int empty = 0;
+		if(boundCheckUp(state, position)) {					
+			for(int k = 0; k < state.getkLength(); k++) {
+				if(state.getSpace(position.x,position.y + k) == player)
+					pieces++;	
+				if(state.getSpace(position.x,position.y + k) == 0)
+					empty++;
+			}
+		}
+		if(pieces == state.getkLength()) 
+			return Integer.MAX_VALUE;
+		else if (pieces + empty == state.getkLength())
+			return 1;
+		else
+			return 0;
+	}
 
-				// down [i][j-k]
-				if(state.kLength <= j + 1) {					
-					int p1Pieces = 0;
-					int p2Pieces = 0;
-					for(int k = 0; k < state.kLength; k++) {	
-						if(state.pieces[i][j-k] == 1) p1Pieces++;
-						if(state.pieces[i][j-k] == 2) p2Pieces++;
-					}
-					if(p1Pieces == 0) p2Win++;
-					if(p2Pieces == 0) p1Win++;
-				}
+	// Heuristic Helper Function (right)
+	private int getHorizontal(BoardModel state, Point position, Byte player) {
+		int pieces = 0;
+		int empty = 0;
+		if(boundCheckRight(state, position)) {					
+			for(int k = 0; k < state.getkLength(); k++) {
+				if(state.getSpace(position.x + k,position.y) == player)
+					pieces++;
+				if(state.getSpace(position.x + k,position.y) == 0)
+					empty++;
+			}
+		}
+		if(pieces == state.getkLength()) 
+			return Integer.MAX_VALUE;
+		else if (pieces + empty == state.getkLength())
+			return 1;
+		else
+			return 0;
+	}
 
-				// left & down [i-k][j-k]
-				if((state.kLength <= i + 1) && (state.kLength <= j + 1)) {
-					int p1Pieces = 0;
-					int p2Pieces = 0;
-					for(int k = 0; k < state.kLength; k++) {	
-						if(state.pieces[i-k][j-k] == 1) p1Pieces++;
-						if(state.pieces[i-k][j-k] == 2) p2Pieces++;
-					}
-					if(p1Pieces == 0) p2Win++;
-					if(p2Pieces == 0) p1Win++;
-				}
+	// Heuristic Helper Function (left and up)
+	private int getDiagonalLeft(BoardModel state, Point position, Byte player) {
+		int pieces = 0;
+		int empty = 0;
+		if(boundCheckLeft(state, position) && boundCheckUp(state, position)) {					
+			for(int k = 0; k < state.getkLength(); k++) {
+				if(state.getSpace(position.x - k,position.y + k) == player)
+					pieces++;
+				if(state.getSpace(position.x - k,position.y + k) == 0)
+					empty++;
+			}
+		}
+		if(pieces == state.getkLength()) 
+			return Integer.MAX_VALUE;
+		else if (pieces + empty == state.getkLength())
+			return 1;
+		else
+			return 0;
+	}
 
-				// left [i-k][j]
-				if(state.kLength <= i + 1) {					
-					int p1Pieces = 0;
-					int p2Pieces = 0;
-					for(int k = 0; k < state.kLength; k++) {	
-						if(state.pieces[i-k][j] == 1) p1Pieces++;
-						if(state.pieces[i-k][j] == 2) p2Pieces++;
-					}
-					if(p1Pieces == 0) p2Win++;
-					if(p2Pieces == 0) p1Win++;
-				}
+	// Heuristic Helper Function (right and up)
+	private int getDiagonalRight(BoardModel state, Point position, Byte player) {
+		int pieces = 0;
+		int empty = 0;
+		if(boundCheckRight(state, position) && boundCheckUp(state, position)) {					
+			for(int k = 0; k < state.getkLength(); k++) {
+				if(state.getSpace(position.x + k,position.y + k) == player)
+					pieces++;
+				if(state.getSpace(position.x + k,position.y + k) == 0)
+					empty++;
+			}
+		}
+		if(pieces == state.getkLength()) 
+			return Integer.MAX_VALUE;
+		else if (pieces + empty == state.getkLength())
+			return 1;
+		else
+			return 0;
+	}
 
-				// left & up [i-k][j+k]
-				if((state.kLength <= i + 1) && (state.height >= j + state.kLength)) {					
-					int p1Pieces = 0;
-					int p2Pieces = 0;
-					for(int k = 0; k < state.kLength; k++) {	
-						if(state.pieces[i-k][j+k] == 1) p1Pieces++;
-						if(state.pieces[i-k][j+k] == 2)	p2Pieces++;
-					}
-					if(p1Pieces == 0) p2Win++;
-					if(p2Pieces == 0) p1Win++;
-				}
+	private boolean boundCheckUp(BoardModel state, Point position) {
+		return state.getHeight() >= position.y + state.getkLength();
+	}
 
+	private boolean boundCheckLeft(BoardModel state, Point position) {
+		return state.getkLength() <= position.x + 1;
+	}
 
-			}	// end verticle board iteration
-		}	 	// end horizonal board iteration
-
-		Point lastMove = state.getLastMove();
-		return (state.pieces[lastMove.x][lastMove.y] == 1) ? (p2Win - p1Win) : (p1Win - p2Win);
-
-	} // end Heuristic function
+	private boolean boundCheckRight(BoardModel state, Point position) {
+		return state.getWidth() >= position.x + state.getkLength();
+	}
 
 }
