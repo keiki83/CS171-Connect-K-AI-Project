@@ -115,23 +115,71 @@ public class JonMikeAI extends CKPlayer {
 	private int heuristic(BoardModel state) {
 		int p1Win = 0;				// sum of # of player1 possible win paths
 		int p2Win = 0;				// sum of # of player2 possible win paths
+		int value;
 
 		// Iterate over the board
 		for(int x = 0; x < state.width; x++) {
 			for(int y = 0; y < state.height; y++) {	
-				p1Win += getVerticle(state, new Point(x,y), (byte) 1);
-				p1Win += getHorizontal(state, new Point(x,y), (byte) 1);
-				p1Win += getDiagonalLeft(state, new Point(x,y), (byte) 1);
-				p1Win += getDiagonalRight(state, new Point(x,y), (byte) 1);
-				p2Win += getVerticle(state, new Point(x,y), (byte) 2);
-				p2Win += getHorizontal(state, new Point(x,y), (byte) 2);
-				p2Win += getDiagonalLeft(state, new Point(x,y), (byte) 2);
-				p2Win += getDiagonalRight(state, new Point(x,y), (byte) 2);
-
+				
+				value = getVerticle(state, new Point(x,y), (byte) 1);
+				if(value == Integer.MAX_VALUE){
+					return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+				}
+				else
+					p1Win += value;
+				
+				value =  getHorizontal(state, new Point(x,y), (byte) 1);
+				if(value == Integer.MAX_VALUE){
+					return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+				}
+				else
+					p1Win += value;
+				
+				value = getDiagonalLeft(state, new Point(x,y), (byte) 1);
+				if(value == Integer.MAX_VALUE){
+					return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+				}
+				else
+					p1Win += value;
+				
+				value = getDiagonalRight(state, new Point(x,y), (byte) 1);
+				if(value == Integer.MAX_VALUE){
+					return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+				}
+				else
+					p1Win += value;
+				
+				value = getVerticle(state, new Point(x,y), (byte) 2);
+				if(value == Integer.MAX_VALUE){
+					return this.player == (byte) 2 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+				}
+				else
+					p2Win += value;
+				
+				value = getHorizontal(state, new Point(x,y), (byte) 2);
+				if(value == Integer.MAX_VALUE){
+					return this.player == (byte) 2 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+				}
+				else
+					p2Win += value;
+				
+				value = getDiagonalLeft(state, new Point(x,y), (byte) 2);
+				if(value == Integer.MAX_VALUE){
+					return this.player == (byte) 2 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+				}
+				else
+					p2Win += value;
+				
+				value = getDiagonalRight(state, new Point(x,y), (byte) 2);
+				if(value == Integer.MAX_VALUE){
+					return this.player == (byte) 2 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+				}
+				else
+					p2Win += value;	
 			}
 		}
-
-		return p1Win - p2Win;
+		
+		return this.player == (byte) 1 ? p1Win - p2Win : p2Win-p1Win;
 
 	} 
 
