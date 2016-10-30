@@ -12,13 +12,13 @@ public class JonMikeAI extends CKPlayer {
 		teamName = "JonMikeAI";
 	}
 
-	
+
 	@Override
 	public Point getMove(BoardModel state, int deadline) {
 		return getMove(state);
 	}
 
-	
+
 	// mmSearch(state) from slides
 	@Override
 	public Point getMove(BoardModel state) {
@@ -40,7 +40,7 @@ public class JonMikeAI extends CKPlayer {
 		return move;
 	}
 
-	
+
 	// maxValue(state) from slides
 	private int maxValue(BoardModel state, int depth) {
 		// if recurse limit reached, eval position
@@ -93,7 +93,7 @@ public class JonMikeAI extends CKPlayer {
 		return minValue;
 	}
 
-	
+
 	// Get available moves - Loop through each column and row selecting available moves.
 	// If gravity is on, only select the lowest y-index move in each column.
 	private ArrayList<Point> getAvailableMoves(BoardModel state) {	
@@ -113,154 +113,112 @@ public class JonMikeAI extends CKPlayer {
 
 	// New heuristic function
 	private int heuristic(BoardModel state) {
-		int p1Win = 0;				// sum of # of player1 possible win paths
-		int p2Win = 0;				// sum of # of player2 possible win paths
 		int value;
+		int total = 0;
 
 		// Iterate over the board
-		for(int x = 0; x < state.width; x++) {
-			for(int y = 0; y < state.height; y++) {	
-				
-				value = getVerticle(state, new Point(x,y), (byte) 1);
-				if(value == Integer.MAX_VALUE){
-					return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-				}
+		for(int x = 0; x < state.getWidth(); x++) {
+			for(int y = 0; y < state.getHeight(); y++) {	
+
+				value = getVerticle(state, new Point(x,y));
+				if(value == Integer.MAX_VALUE || value == Integer.MIN_VALUE)
+					return value;
 				else
-					p1Win += value;
-				
-				value =  getHorizontal(state, new Point(x,y), (byte) 1);
-				if(value == Integer.MAX_VALUE){
-					return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-				}
+					total += value;
+
+				value =  getHorizontal(state, new Point(x,y));
+				if(value == Integer.MAX_VALUE || value == Integer.MIN_VALUE)
+					return value;
 				else
-					p1Win += value;
-				
-				value = getDiagonalLeft(state, new Point(x,y), (byte) 1);
-				if(value == Integer.MAX_VALUE){
-					return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-				}
+					total += value;
+
+				value = getDiagonalLeft(state, new Point(x,y));
+				if(value == Integer.MAX_VALUE || value == Integer.MIN_VALUE)
+					return value;
 				else
-					p1Win += value;
-				
-				value = getDiagonalRight(state, new Point(x,y), (byte) 1);
-				if(value == Integer.MAX_VALUE){
-					return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-				}
+					total += value;
+
+				value = getDiagonalRight(state, new Point(x,y));
+				if(value == Integer.MAX_VALUE || value == Integer.MIN_VALUE)
+					return value;
 				else
-					p1Win += value;
-				
-				value = getVerticle(state, new Point(x,y), (byte) 2);
-				if(value == Integer.MAX_VALUE){
-					return this.player == (byte) 2 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-				}
-				else
-					p2Win += value;
-				
-				value = getHorizontal(state, new Point(x,y), (byte) 2);
-				if(value == Integer.MAX_VALUE){
-					return this.player == (byte) 2 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-				}
-				else
-					p2Win += value;
-				
-				value = getDiagonalLeft(state, new Point(x,y), (byte) 2);
-				if(value == Integer.MAX_VALUE){
-					return this.player == (byte) 2 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-				}
-				else
-					p2Win += value;
-				
-				value = getDiagonalRight(state, new Point(x,y), (byte) 2);
-				if(value == Integer.MAX_VALUE){
-					return this.player == (byte) 2 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-				}
-				else
-					p2Win += value;	
+					total += value;
+
 			}
 		}
-		
-		return this.player == (byte) 1 ? p1Win - p2Win : p2Win-p1Win;
-
+		return total;
 	} 
 
 	// Heuristic Helper Function (up)
-	private int getVerticle(BoardModel state, Point position, Byte player) {
-		int pieces = 0;
+	private int getVerticle(BoardModel state, Point position) {
+		int p1Pieces = 0;
+		int p2Pieces = 0;
 		int empty = 0;
 		if(boundCheckUp(state, position)) {					
 			for(int k = 0; k < state.getkLength(); k++) {
-				if(state.getSpace(position.x,position.y + k) == player)
-					pieces++;	
-				if(state.getSpace(position.x,position.y + k) == 0)
+				if(state.getSpace(position.x,position.y + k) == (byte) 1)
+					p1Pieces++;	
+				else if(state.getSpace(position.x,position.y + k) == (byte) 2)
+					p2Pieces++;
+				else
 					empty++;
 			}
 		}
-		if(pieces == state.getkLength()) 
-			return Integer.MAX_VALUE;
-		else if (pieces + empty == state.getkLength())
-			return 1;
-		else
-			return 0;
+		return calculate(state, p1Pieces, p2Pieces, empty);
 	}
 
 	// Heuristic Helper Function (right)
-	private int getHorizontal(BoardModel state, Point position, Byte player) {
-		int pieces = 0;
+	private int getHorizontal(BoardModel state, Point position) {
+		int p1Pieces = 0;
+		int p2Pieces = 0;
 		int empty = 0;
 		if(boundCheckRight(state, position)) {					
 			for(int k = 0; k < state.getkLength(); k++) {
-				if(state.getSpace(position.x + k,position.y) == player)
-					pieces++;
-				if(state.getSpace(position.x + k,position.y) == 0)
+				if(state.getSpace(position.x + k, position.y) == (byte) 1)
+					p1Pieces++;	
+				else if(state.getSpace(position.x + k, position.y) == (byte) 2)
+					p2Pieces++;
+				else
 					empty++;
 			}
 		}
-		if(pieces == state.getkLength()) 
-			return Integer.MAX_VALUE;
-		else if (pieces + empty == state.getkLength())
-			return 1;
-		else
-			return 0;
+		return calculate(state, p1Pieces, p2Pieces, empty);
 	}
 
 	// Heuristic Helper Function (left and up)
-	private int getDiagonalLeft(BoardModel state, Point position, Byte player) {
-		int pieces = 0;
+	private int getDiagonalLeft(BoardModel state, Point position) {
+		int p1Pieces = 0;
+		int p2Pieces = 0;
 		int empty = 0;
 		if(boundCheckLeft(state, position) && boundCheckUp(state, position)) {					
 			for(int k = 0; k < state.getkLength(); k++) {
-				if(state.getSpace(position.x - k,position.y + k) == player)
-					pieces++;
-				if(state.getSpace(position.x - k,position.y + k) == 0)
+				if(state.getSpace(position.x - k, position.y + k) == (byte) 1)
+					p1Pieces++;	
+				else if(state.getSpace(position.x - k, position.y + k) == (byte) 2)
+					p2Pieces++;
+				else
 					empty++;
 			}
 		}
-		if(pieces == state.getkLength()) 
-			return Integer.MAX_VALUE;
-		else if (pieces + empty == state.getkLength())
-			return 1;
-		else
-			return 0;
+		return calculate(state, p1Pieces, p2Pieces, empty);
 	}
 
 	// Heuristic Helper Function (right and up)
-	private int getDiagonalRight(BoardModel state, Point position, Byte player) {
-		int pieces = 0;
+	private int getDiagonalRight(BoardModel state, Point position) {
+		int p1Pieces = 0;
+		int p2Pieces = 0;
 		int empty = 0;
 		if(boundCheckRight(state, position) && boundCheckUp(state, position)) {					
 			for(int k = 0; k < state.getkLength(); k++) {
-				if(state.getSpace(position.x + k,position.y + k) == player)
-					pieces++;
-				if(state.getSpace(position.x + k,position.y + k) == 0)
+				if(state.getSpace(position.x + k,position.y + k) == (byte) 1)
+					p1Pieces++;	
+				else if(state.getSpace(position.x + k,position.y + k) == (byte) 2)
+					p2Pieces++;
+				else
 					empty++;
 			}
 		}
-		if(pieces == state.getkLength()) 
-			return Integer.MAX_VALUE;
-		else if (pieces + empty == state.getkLength())
-			return 1;
-		else
-			return 0;
+		return calculate(state, p1Pieces, p2Pieces, empty);
 	}
 
 	private boolean boundCheckUp(BoardModel state, Point position) {
@@ -275,4 +233,16 @@ public class JonMikeAI extends CKPlayer {
 		return state.getWidth() >= position.x + state.getkLength();
 	}
 
+	private int calculate(BoardModel state, int p1Pieces, int p2Pieces, int empty) {
+		if(p1Pieces == state.getkLength())
+			return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+		else if(p2Pieces == state.getkLength())
+			return this.player == (byte) 2 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+		else if(p1Pieces + empty == state.getkLength())
+			return this.player == (byte) 1 ? 1 : -1;
+		else if(p2Pieces + empty == state.getkLength())
+			return this.player == (byte) 2 ? 1 : -1;
+		else 
+			return 0;
+	}
 }
