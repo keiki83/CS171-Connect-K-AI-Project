@@ -6,7 +6,8 @@ import java.util.ArrayList;
 public class JonMikeAI extends CKPlayer {
 
 	private final int CUTOFF_DEPTH = 2;
-
+	private byte player;
+	
 	public JonMikeAI(byte player, BoardModel state) {
 		super(player, state);
 		teamName = "JonMikeAI";
@@ -19,21 +20,29 @@ public class JonMikeAI extends CKPlayer {
 	}
 
 
-	// mmSearch(state) from slides
+	// abSearch(state) from slides
 	@Override
 	public Point getMove(BoardModel state) {
 
 		ArrayList<Point> availableMoves = getAvailableMoves(state); 
 
+		// Determine which player is going by assuming it is the opposite of the
+		// player that just made a move
+		if(state.getLastMove() == null) {
+			player = 1;
+		} else {
+			player = (byte)(state.getSpace(state.getLastMove()) == 1 ? 2 : 1);
+		}
 		int value;
-		int maxValue = Integer.MIN_VALUE;
+		int alpha = Integer.MIN_VALUE;
+		int beta = Integer.MAX_VALUE;
 		int depth = 0;
 		Point move = null;
 
 		for (int i = 0; i < availableMoves.size(); i++) {
-			value = minValue(state.placePiece(availableMoves.get(i), (byte) 1), depth+1);
-			if(value > maxValue) {
-				maxValue = value;
+			value = minValue(state.placePiece(availableMoves.get(i), player), depth+1, alpha, beta);
+			if(value > alpha) {
+				alpha = value;
 				move = availableMoves.get(i);
 			}
 		}
@@ -41,8 +50,8 @@ public class JonMikeAI extends CKPlayer {
 	}
 
 
-	// maxValue(state) from slides
-	private int maxValue(BoardModel state, int depth) {
+	// maxValue(state, al, be) from slides
+	private int maxValue(BoardModel state, int depth, int alpha, int beta) {
 		// if recurse limit reached, eval position
 		// if(terminal(state)) return utility(state);
 		if (depth == CUTOFF_DEPTH)
@@ -53,22 +62,25 @@ public class JonMikeAI extends CKPlayer {
 
 		// v = -infty
 		int value; 
-		int maxValue = Integer.MIN_VALUE;
 
 		// for each action a:
 		//	v = max(v, minValue(apply(state,a))
 		for(int i = 0; i < availableMoves.size(); i++) {
-			value = minValue(state.placePiece(availableMoves.get(i), (byte) 1), depth+1);
-			if (value > maxValue)
-				maxValue = value;
+			value = minValue(state.placePiece(availableMoves.get(i), player), depth+1, alpha, beta);
+			if (value > alpha) {
+				alpha = value;
+			}
+			if (alpha >= beta) {
+				return Integer.MAX_VALUE;
+			}
 		}
 
 		// return v
-		return maxValue;
+		return alpha;
 	}
 
-	// minValue(state) from slides
-	private int minValue(BoardModel state, int depth) {
+	// minValue(state, al, be) from slides
+	private int minValue(BoardModel state, int depth, int alpha, int beta) {
 		// If recursion limit reached, eval position
 		// if(terminal(state)) return utility(state)
 		if (depth == CUTOFF_DEPTH)
@@ -79,18 +91,21 @@ public class JonMikeAI extends CKPlayer {
 
 		// v = infty
 		int value; 
-		int minValue = Integer.MAX_VALUE;
 
 		// for each action a:
 		//	v = max(v, maxValue(apply(state,a))
 		for(int i = 0; i < availableMoves.size(); i++) {
-			value = maxValue(state.placePiece(availableMoves.get(i), (byte) 2), depth+1);
-			if (value < minValue) 
-				minValue = value;
+			value = maxValue(state.placePiece(availableMoves.get(i), (byte)(player == 1 ? 2 : 1)), depth+1, alpha, beta);
+			if (value < beta) {
+				beta = value;
+			}
+			if (alpha >= beta) {
+				return Integer.MIN_VALUE;
+			}
 		}
 
 		// return v
-		return minValue;
+		return beta;
 	}
 
 
