@@ -221,18 +221,26 @@ public class JonMikeAI extends CKPlayer {
 		return calculate(state, p1Pieces, p2Pieces, empty);
 	}
 
+	// Helper function for getDiag/getVert/etc.
+	// Evaluates if current position is within the bounds of the game
 	private boolean boundCheckUp(BoardModel state, Point position) {
 		return state.getHeight() >= position.y + state.getkLength();
 	}
 
+	// Helper function for getDiag/getVert/etc.
+	// Evaluates if current position is within the bounds of the game
 	private boolean boundCheckLeft(BoardModel state, Point position) {
 		return state.getkLength() <= position.x + 1;
 	}
 
+	// Helper function for getDiag/getVert/etc.
+	// Evaluates if current position is within the bounds of the game
 	private boolean boundCheckRight(BoardModel state, Point position) {
 		return state.getWidth() >= position.x + state.getkLength();
 	}
 
+	// Helper function for getDiag/getVert/etc.
+	// Calculates the heuristic value difference between players based on which player the AI is
 	private int calculate(BoardModel state, int p1Pieces, int p2Pieces, int empty) {
 		if(p1Pieces == state.getkLength())
 			return this.player == (byte) 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
