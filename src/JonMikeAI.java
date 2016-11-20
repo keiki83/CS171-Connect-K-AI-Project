@@ -4,10 +4,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 
 public class JonMikeAI extends CKPlayer {
-
-	private final int CUTOFF_DEPTH = 2;
-	private byte player;
-	
+	private long begin;
 	public JonMikeAI(byte player, BoardModel state) {
 		super(player, state);
 		teamName = "JonMikeAI";
@@ -16,6 +13,8 @@ public class JonMikeAI extends CKPlayer {
 
 	@Override
 	public Point getMove(BoardModel state, int deadline) {
+
+		begin = System.currentTimeMillis();
 		return getMove(state);
 	}
 
@@ -23,39 +22,58 @@ public class JonMikeAI extends CKPlayer {
 	// abSearch(state) from slides
 	@Override
 	public Point getMove(BoardModel state) {
-
+		begin = System.currentTimeMillis();
 		ArrayList<Point> availableMoves = getAvailableMoves(state); 
-
-		// Determine which player is going by assuming it is the opposite of the
-		// player that just made a move
-		if(state.getLastMove() == null) {
-			player = 1;
-		} else {
-			player = (byte)(state.getSpace(state.getLastMove()) == 1 ? 2 : 1);
-		}
+		
 		int value;
 		int alpha = Integer.MIN_VALUE;
 		int beta = Integer.MAX_VALUE;
 		int depth = 0;
-		Point move = null;
+		int cuttoff = 1;
+		Point move = availableMoves.get(0);
+		int move_index = 0;
 
-		for (int i = 0; i < availableMoves.size(); i++) {
-			value = minValue(state.placePiece(availableMoves.get(i), player), depth+1, alpha, beta);
+		while (true) {
+			if ((System.currentTimeMillis() - begin) > 4000){
+				break;
+			}
+			
+			// Start with the best known option from the last round of IDS
+			value = minValue(state.placePiece(availableMoves.get(move_index), player), depth+1, alpha, beta, cuttoff);
 			if(value > alpha) {
 				alpha = value;
-				move = availableMoves.get(i);
 			}
+			
+			for (int i = 0; i < availableMoves.size(); i++) {
+
+				if ((System.currentTimeMillis() - begin) > 4000){
+					break;
+				}
+				if (i == move_index) {
+					// No point in doing work twice
+					continue;
+				}
+				
+				value = minValue(state.placePiece(availableMoves.get(i), player), depth+1, alpha, beta, cuttoff);
+				if(value > alpha) {
+					alpha = value;
+					move = availableMoves.get(i);
+					move_index = i;
+				}
+			}
+			cuttoff++;
 		}
 		return move;
 	}
 
 
 	// maxValue(state, al, be) from slides
-	private int maxValue(BoardModel state, int depth, int alpha, int beta) {
+	private int maxValue(BoardModel state, int depth, int alpha, int beta, int cuttoff) {
 		// if recurse limit reached, eval position
 		// if(terminal(state)) return utility(state);
-		if (depth == CUTOFF_DEPTH)
+		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > 4000){
 			return heuristic(state);
+		}
 
 		// otherwise, find the best child
 		ArrayList<Point> availableMoves = getAvailableMoves(state); 
@@ -66,7 +84,7 @@ public class JonMikeAI extends CKPlayer {
 		// for each action a:
 		//	v = max(v, minValue(apply(state,a))
 		for(int i = 0; i < availableMoves.size(); i++) {
-			value = minValue(state.placePiece(availableMoves.get(i), player), depth+1, alpha, beta);
+			value = minValue(state.placePiece(availableMoves.get(i), player), depth+1, alpha, beta, cuttoff);
 			if (value > alpha) {
 				alpha = value;
 			}
@@ -80,11 +98,12 @@ public class JonMikeAI extends CKPlayer {
 	}
 
 	// minValue(state, al, be) from slides
-	private int minValue(BoardModel state, int depth, int alpha, int beta) {
+	private int minValue(BoardModel state, int depth, int alpha, int beta, int cuttoff) {
 		// If recursion limit reached, eval position
 		// if(terminal(state)) return utility(state)
-		if (depth == CUTOFF_DEPTH)
+		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > 4500) {
 			return heuristic(state);
+		}
 
 		// otherwise, find the worst child
 		ArrayList<Point> availableMoves = getAvailableMoves(state); 
@@ -95,7 +114,7 @@ public class JonMikeAI extends CKPlayer {
 		// for each action a:
 		//	v = max(v, maxValue(apply(state,a))
 		for(int i = 0; i < availableMoves.size(); i++) {
-			value = maxValue(state.placePiece(availableMoves.get(i), (byte)(player == 1 ? 2 : 1)), depth+1, alpha, beta);
+			value = maxValue(state.placePiece(availableMoves.get(i), (byte)(player == 1 ? 2 : 1)), depth+1, alpha, beta, cuttoff);
 			if (value < beta) {
 				beta = value;
 			}
