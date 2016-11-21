@@ -4,6 +4,10 @@ import java.awt.Point;
 import java.util.ArrayList;
 
 public class JonMikeAI extends CKPlayer {
+	// Used for testing code, set to FALSE before submission
+	private final Boolean DEBUG = true;
+	
+	
 	private long begin;
 	public JonMikeAI(byte player, BoardModel state) {
 		super(player, state);
@@ -72,7 +76,11 @@ public class JonMikeAI extends CKPlayer {
 		// if recurse limit reached, eval position
 		// if(terminal(state)) return utility(state);
 		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > 4000){
-			return heuristic(state);
+			int heuristicValue = heuristic(state);
+			if(DEBUG) {
+				System.out.println(String.format("DEBUG: maxValue() - depth: %s, alpha: %d, beta: %d, cuttoff: %d, heuristicValue: %d", depth, alpha, beta, cuttoff, heuristicValue));
+			}
+			return heuristicValue;
 		}
 
 		// otherwise, find the best child
@@ -102,7 +110,11 @@ public class JonMikeAI extends CKPlayer {
 		// If recursion limit reached, eval position
 		// if(terminal(state)) return utility(state)
 		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > 4500) {
-			return heuristic(state);
+			int heuristicValue = heuristic(state);
+			if(DEBUG) {
+				System.out.println(String.format("DEBUG: minValue() - depth: %s, alpha: %d, beta: %d, cuttoff: %d, heuristicValue: %d", depth, alpha, beta, cuttoff, heuristicValue));
+			}
+			return heuristicValue;
 		}
 
 		// otherwise, find the worst child
