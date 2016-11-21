@@ -5,9 +5,9 @@ import java.util.ArrayList;
 
 public class JonMikeAI extends CKPlayer {
 	// Used for testing code, set to FALSE before submission
-	private final Boolean DEBUG = true;
-	
-	
+	private final Boolean DEBUG_MINIMAX = false;
+	private final Boolean DEBUG_HEURISTIC = false;
+
 	private long begin;
 	public JonMikeAI(byte player, BoardModel state) {
 		super(player, state);
@@ -77,8 +77,12 @@ public class JonMikeAI extends CKPlayer {
 		// if(terminal(state)) return utility(state);
 		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > 4000){
 			int heuristicValue = heuristic(state);
-			if(DEBUG) {
+			if(DEBUG_HEURISTIC) {
+				System.out.println(String.format("Heuristic value: %d\n\n", heuristicValue));
+			}
+			if(DEBUG_MINIMAX) {
 				System.out.println(String.format("DEBUG: maxValue() - depth: %s, alpha: %d, beta: %d, cuttoff: %d, heuristicValue: %d", depth, alpha, beta, cuttoff, heuristicValue));
+				System.out.println(state.toString());
 			}
 			return heuristicValue;
 		}
@@ -111,8 +115,12 @@ public class JonMikeAI extends CKPlayer {
 		// if(terminal(state)) return utility(state)
 		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > 4500) {
 			int heuristicValue = heuristic(state);
-			if(DEBUG) {
+			if(DEBUG_HEURISTIC) {
+				System.out.println(String.format("Heuristic value: %d\n\n", heuristicValue));
+			}
+			if(DEBUG_MINIMAX) {
 				System.out.println(String.format("DEBUG: minValue() - depth: %s, alpha: %d, beta: %d, cuttoff: %d, heuristicValue: %d", depth, alpha, beta, cuttoff, heuristicValue));
+				System.out.println(state.toString());
 			}
 			return heuristicValue;
 		}
@@ -164,12 +172,18 @@ public class JonMikeAI extends CKPlayer {
 		int Player;
 		int value;
 
+		if(DEBUG_HEURISTIC) {
+			printBoard(state);;
+		}
+		
 		// Iterate over the board
 		for(int x = 0; x < state.getWidth(); x++) {
 			for(int y = 0; y < state.getHeight(); y++) {
+
 				// Player 1
 				Player = 1;
-				// Get player 1 top value
+
+				// Get player 1 up value
 				value = getVerticle(state, new Point(x,y), Player);
 				if(value == Integer.MAX_VALUE) {
 					return calculate(Integer.MAX_VALUE, p2);
@@ -203,7 +217,8 @@ public class JonMikeAI extends CKPlayer {
 
 				// Player 2
 				Player = 2;
-				// Get player 2 top value
+
+				// Get player 2 up value
 				value = getVerticle(state, new Point(x,y), Player);
 				if(value == Integer.MAX_VALUE) {
 					return calculate(p1, Integer.MAX_VALUE);
@@ -267,15 +282,25 @@ public class JonMikeAI extends CKPlayer {
 
 		if(boundCheckUp(state, position)) {					
 			for(int k = 0; k < state.getkLength(); k++) {
-				if(state.getSpace(position.x, position.y + k) == enemyPlayer)
-					return 0;
-				pieces++;
-				value += pieces*pieces;
+				if(state.getSpace(position.x, position.y + k) == enemyPlayer) {
+					value = 0;
+					break;
+				}
+				if(state.getSpace(position.x, position.y + k) == player) {
+					pieces++;
+					value += (pieces*pieces);
+				}
 			}
 		}
-
+				
 		if(pieces == state.getkLength())
-			return Integer.MAX_VALUE;
+			value = Integer.MAX_VALUE;
+		
+		if(DEBUG_HEURISTIC) {
+			System.out.println(String.format("[%d,%d] verticle   - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
+			System.out.flush();
+		}
+		
 		return value;
 	}
 
@@ -288,15 +313,25 @@ public class JonMikeAI extends CKPlayer {
 
 		if(boundCheckRight(state, position)) {					
 			for(int k = 0; k < state.getkLength(); k++) {
-				if(state.getSpace(position.x + k, position.y) == enemyPlayer)
-					return 0;
-				pieces++;
-				value += pieces*pieces;
+				if(state.getSpace(position.x + k, position.y) == enemyPlayer) {
+					value = 0;
+					break;
+				}
+				if(state.getSpace(position.x + k, position.y) == player) {
+					pieces++;
+					value += (pieces*pieces);
+				}
 			}
 		}
 
 		if(pieces == state.getkLength())
-			return Integer.MAX_VALUE;
+			value = Integer.MAX_VALUE;
+		
+		if(DEBUG_HEURISTIC) {
+			System.out.println(String.format("[%d,%d] horizontal - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
+			System.out.flush();
+		}
+		
 		return value;
 	}
 
@@ -309,15 +344,25 @@ public class JonMikeAI extends CKPlayer {
 
 		if(boundCheckLeft(state, position) && boundCheckUp(state, position)) {					
 			for(int k = 0; k < state.getkLength(); k++) {
-				if(state.getSpace(position.x - k, position.y + k) == enemyPlayer)
-					return 0;
-				pieces++;
-				value += pieces*pieces;
+				if(state.getSpace(position.x - k, position.y + k) == enemyPlayer) {
+					value = 0;
+					break;
+				}
+				if(state.getSpace(position.x - k, position.y + k) == player) {
+					pieces++;
+					value += (pieces*pieces);
+				}
 			}
 		}
 
 		if(pieces == state.getkLength())
-			return Integer.MAX_VALUE;
+			value = Integer.MAX_VALUE;
+		
+		if(DEBUG_HEURISTIC) {
+			System.out.println(String.format("[%d,%d] diagLeft   - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
+			System.out.flush();
+		}
+		
 		return value;
 	}
 
@@ -330,15 +375,25 @@ public class JonMikeAI extends CKPlayer {
 
 		if(boundCheckRight(state, position) && boundCheckUp(state, position)) {					
 			for(int k = 0; k < state.getkLength(); k++) {
-				if(state.getSpace(position.x + k, position.y + k) == enemyPlayer)
-					return 0;
-				pieces++;
-				value += pieces*pieces;
+				if(state.getSpace(position.x + k, position.y + k) == enemyPlayer) {
+					value = 0;
+					break;
+				}
+				if(state.getSpace(position.x + k, position.y + k) == player) {
+					pieces++;
+					value += (pieces*pieces);
+				}
 			}
 		}
 
 		if(pieces == state.getkLength())
-			return Integer.MAX_VALUE;
+			value = Integer.MAX_VALUE;
+		
+		if(DEBUG_HEURISTIC) {
+			System.out.println(String.format("[%d,%d] diagRight  - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
+			System.out.flush();
+		}
+		
 		return value;
 	}
 
@@ -358,5 +413,17 @@ public class JonMikeAI extends CKPlayer {
 	// Evaluates if current position is within the bounds of the game
 	private boolean boundCheckRight(BoardModel state, Point position) {
 		return state.getWidth() >= position.x + state.getkLength();
+	}
+	
+	// debug function - print game board
+	private void printBoard(BoardModel state) {
+		for(int y = state.getHeight() - 1; y >= 0 ; y--) {
+			for(int x = 0; x < state.getWidth(); x++) {
+				System.out.print(state.getSpace(x, y));
+				System.out.flush();
+			}
+			System.out.print("\n");
+			System.out.flush();
+		}
 	}
 }
