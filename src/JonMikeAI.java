@@ -7,8 +7,14 @@ public class JonMikeAI extends CKPlayer {
 	// Used for testing code, set to FALSE before submission
 	private final Boolean DEBUG_MINIMAX = false;
 	private final Boolean DEBUG_HEURISTIC = false;
+	private final Boolean DEBUG_TIMING = false;
 
+	// Variables
 	private long begin;
+	private long deadline = 5000;
+	private long buffer = 200;
+	
+	// Constructor
 	public JonMikeAI(byte player, BoardModel state) {
 		super(player, state);
 		teamName = "JonMikeAI";
@@ -16,15 +22,29 @@ public class JonMikeAI extends CKPlayer {
 
 
 	@Override
+	// getMove with a specified deadline
 	public Point getMove(BoardModel state, int deadline) {
 
 		begin = System.currentTimeMillis();
-		return getMove(state);
+		this.deadline = deadline;
+		
+		if(DEBUG_TIMING) {
+			System.out.format("DEBUG: getMove with deadline - deadline: %d, time: %d, buffer: %d%n", deadline, this.deadline, System.currentTimeMillis() - begin, buffer);
+		}
+		
+		Point move = getMove(state);
+		
+		if(DEBUG_TIMING) {
+			System.out.format("DEBUG: getMove with deadline returning move - time: %d%n", System.currentTimeMillis() - begin);
+		}
+		
+		return move;
 	}
 
 
 	// abSearch(state) from slides
 	@Override
+	// getMove using default deadline
 	public Point getMove(BoardModel state) {
 		begin = System.currentTimeMillis();
 		ArrayList<Point> availableMoves = getAvailableMoves(state); 
@@ -37,8 +57,8 @@ public class JonMikeAI extends CKPlayer {
 		Point move = availableMoves.get(0);
 		int move_index = 0;
 
-		while (true) {
-			if ((System.currentTimeMillis() - begin) > 4000){
+		while (true) {	
+			if ((System.currentTimeMillis() - begin) > (deadline - buffer)) {
 				break;
 			}
 
@@ -50,7 +70,7 @@ public class JonMikeAI extends CKPlayer {
 
 			for (int i = 0; i < availableMoves.size(); i++) {
 
-				if ((System.currentTimeMillis() - begin) > 4000){
+				if ((System.currentTimeMillis() - begin) > (deadline - buffer)) {
 					break;
 				}
 				if (i == move_index) {
@@ -75,10 +95,10 @@ public class JonMikeAI extends CKPlayer {
 	private int maxValue(BoardModel state, int depth, int alpha, int beta, int cuttoff) {
 		// if recurse limit reached, eval position
 		// if(terminal(state)) return utility(state);
-		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > 4000){
+		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > (deadline - buffer)) {
 			int heuristicValue = heuristic(state);
 			if(DEBUG_HEURISTIC) {
-				System.out.println(String.format("Heuristic value: %d\n\n", heuristicValue));
+				System.out.println(String.format("DEBUG: Heuristic value: %d\n\n", heuristicValue));
 			}
 			if(DEBUG_MINIMAX) {
 				System.out.println(String.format("DEBUG: maxValue() - depth: %s, alpha: %d, beta: %d, cuttoff: %d, heuristicValue: %d", depth, alpha, beta, cuttoff, heuristicValue));
@@ -113,10 +133,10 @@ public class JonMikeAI extends CKPlayer {
 	private int minValue(BoardModel state, int depth, int alpha, int beta, int cuttoff) {
 		// If recursion limit reached, eval position
 		// if(terminal(state)) return utility(state)
-		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > 4500) {
+		if (depth >= cuttoff || (System.currentTimeMillis() - begin) > (deadline - buffer)) {
 			int heuristicValue = heuristic(state);
 			if(DEBUG_HEURISTIC) {
-				System.out.println(String.format("Heuristic value: %d\n\n", heuristicValue));
+				System.out.println(String.format("DEBUG: Heuristic value: %d\n\n", heuristicValue));
 			}
 			if(DEBUG_MINIMAX) {
 				System.out.println(String.format("DEBUG: minValue() - depth: %s, alpha: %d, beta: %d, cuttoff: %d, heuristicValue: %d", depth, alpha, beta, cuttoff, heuristicValue));
@@ -297,7 +317,7 @@ public class JonMikeAI extends CKPlayer {
 			value = Integer.MAX_VALUE;
 		
 		if(DEBUG_HEURISTIC) {
-			System.out.println(String.format("[%d,%d] verticle   - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
+			System.out.println(String.format("DEBUG: [%d,%d] verticle   - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
 			System.out.flush();
 		}
 		
@@ -328,7 +348,7 @@ public class JonMikeAI extends CKPlayer {
 			value = Integer.MAX_VALUE;
 		
 		if(DEBUG_HEURISTIC) {
-			System.out.println(String.format("[%d,%d] horizontal - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
+			System.out.println(String.format("DEBUG: [%d,%d] horizontal - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
 			System.out.flush();
 		}
 		
@@ -359,7 +379,7 @@ public class JonMikeAI extends CKPlayer {
 			value = Integer.MAX_VALUE;
 		
 		if(DEBUG_HEURISTIC) {
-			System.out.println(String.format("[%d,%d] diagLeft   - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
+			System.out.println(String.format("DEBUG: [%d,%d] diagLeft   - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
 			System.out.flush();
 		}
 		
@@ -390,7 +410,7 @@ public class JonMikeAI extends CKPlayer {
 			value = Integer.MAX_VALUE;
 		
 		if(DEBUG_HEURISTIC) {
-			System.out.println(String.format("[%d,%d] diagRight  - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
+			System.out.println(String.format("DEBUG: [%d,%d] diagRight  - board value: %d, player: %d, enemyPlayer: %d, pieces: %d, value: %d", position.x, position.y, state.getSpace(position.x, position.y), player, enemyPlayer, pieces, value));
 			System.out.flush();
 		}
 		
@@ -418,12 +438,11 @@ public class JonMikeAI extends CKPlayer {
 	// debug function - print game board
 	private void printBoard(BoardModel state) {
 		for(int y = state.getHeight() - 1; y >= 0 ; y--) {
+			System.out.print("DEBUG: ");
 			for(int x = 0; x < state.getWidth(); x++) {
 				System.out.print(state.getSpace(x, y));
-				System.out.flush();
 			}
 			System.out.print("\n");
-			System.out.flush();
 		}
 	}
 }
